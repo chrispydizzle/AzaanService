@@ -4,3 +4,4 @@ obj/
 /codealike.json
 /.idea/
 /AzaanService/*.blob
+/AzaanService/azaan.conf
