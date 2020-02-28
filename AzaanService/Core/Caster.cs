@@ -2,7 +2,6 @@ namespace AzaanService.Core
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Threading.Tasks;
     using GoogleCast;
     using GoogleCast.Channels;
