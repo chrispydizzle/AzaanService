@@ -31,7 +31,7 @@ namespace AzaanService
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            AppDomain.CurrentDomain.UnhandledException+=CurrentDomainOnUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
             this.logger.LogInformation("Starting the caster: {time}", DateTimeOffset.Now);
             this.caster.Subscribe();
             string targetDevice = this.configuration["azaan:target"];
@@ -56,11 +56,15 @@ namespace AzaanService
                         DateTime actionable = q.Dequeue();
                         this.logger.LogInformation($"Broadcasting {actionable}");
 
-                        // await Broadcast();
+                        await Broadcast();
                     }
 
                     await Task.Delay(int.Parse(this.configuration["azaan:delay"]), stoppingToken);
                 }
+
+                TimeSpan sleepTime = DateTime.Today.AddDays(1) - DateTime.Now;
+                this.logger.LogInformation($"Finished daily routine. Sleeping till midnight {sleepTime}. Goodbye.");
+                await Task.Delay(sleepTime, stoppingToken);
             }
         }
 
@@ -77,7 +81,43 @@ namespace AzaanService
             c.DefaultRequestHeaders.Add("User-Agent", "AzaanService 2.0");
             string url = $"{this.configuration["azaan:apitarget"]}{this.configuration["azaan:apikey"]}";
             Task<Stream> result = c.GetStreamAsync(url);
-            AzaanTimes r = await JsonSerializer.DeserializeAsync<AzaanTimes>(await result, this.serializeOptions);
+            JsonDocument jd = JsonDocument.Parse(await result);
+            AzaanTimes r = new AzaanTimes();
+            foreach (JsonElement jsonElement in jd.RootElement.GetProperty("items").EnumerateArray())
+            {
+                string dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
+                foreach (JsonProperty jsonProperty in jsonElement.EnumerateObject())
+                {
+                    this.logger.LogInformation($"{jsonProperty.Name}: {jsonProperty.Value}");
+                    string propertyName = jsonProperty.Name;
+                    string val = jsonProperty.Value.GetString();
+
+                    switch (propertyName)
+                    {
+                        case "date_for":
+                            dateFor = val;
+                            break;
+                        case "fajr":
+                            r.Fajr = AzaanTimeConverter.CustomParse(dateFor, val);
+                            break;
+                        case "dhuhr":
+                            r.Dhuhr = AzaanTimeConverter.CustomParse(dateFor, val);
+                            break;
+                        case "asr":
+                            r.Asr = AzaanTimeConverter.CustomParse(dateFor, val);
+                            break;
+                        case "maghrib":
+                            r.Magrib = AzaanTimeConverter.CustomParse(dateFor, val);
+                            break;
+                        case "isha":
+                            r.Isha = AzaanTimeConverter.CustomParse(dateFor, val);
+                            break;
+                    }
+                }
+            }
+
+            if (!r.IsFilled()) throw new InvalidOperationException($"Something's wrong: {jd.ToString()}");
+
             return r;
         }
 

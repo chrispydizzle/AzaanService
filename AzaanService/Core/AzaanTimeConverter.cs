@@ -48,19 +48,19 @@ namespace AzaanService.Core
                         case "date_for":
                             break;
                         case "fajr":
-                            r.Fajr = this.CustomParse(dateFor, reader.GetString());
+                            r.Fajr = AzaanTimeConverter.CustomParse(dateFor, reader.GetString());
                             break;
                         case "dhuhr":
-                            r.Dhuhr = this.CustomParse(dateFor, reader.GetString());
+                            r.Dhuhr = AzaanTimeConverter.CustomParse(dateFor, reader.GetString());
                             break;
                         case "asr":
-                            r.Asr = this.CustomParse(dateFor, reader.GetString());
+                            r.Asr = AzaanTimeConverter.CustomParse(dateFor, reader.GetString());
                             break;
                         case "maghrib":
-                            r.Magrib = this.CustomParse(dateFor, reader.GetString());
+                            r.Magrib = AzaanTimeConverter.CustomParse(dateFor, reader.GetString());
                             break;
                         case "isha":
-                            r.Isha = this.CustomParse(dateFor, reader.GetString());
+                            r.Isha = AzaanTimeConverter.CustomParse(dateFor, reader.GetString());
                             break;
                     }
                 }
@@ -74,7 +74,7 @@ namespace AzaanService.Core
             return r;
         }
 
-        private DateTime CustomParse(string dateString, string timeString)
+        public static DateTime CustomParse(string dateString, string timeString)
         {
             return DateTime.ParseExact($"{dateString} {timeString}", "yyyy-M-d h:mm tt", CultureInfo.InvariantCulture);
         }

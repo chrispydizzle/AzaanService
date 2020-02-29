@@ -68,6 +68,7 @@ namespace AzaanService.Core
 
             IMediaChannel mChannel = sender.GetChannel<IMediaChannel>();
             await sender.LaunchAsync(mChannel);
+
             this.mediaChannel = mChannel;
             this.Connected = true;
             return true;
@@ -84,8 +85,6 @@ namespace AzaanService.Core
 
         public async Task<bool> Play(string contentLink)
         {
-            FileStyleUriParser uriParser = new FileStyleUriParser();
-
             MediaInformation mediaInformation = new MediaInformation();
             mediaInformation.ContentId = contentLink;
             mediaInformation.ContentType = "audio/x-wav";
