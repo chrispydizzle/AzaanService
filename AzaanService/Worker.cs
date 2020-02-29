@@ -20,6 +20,7 @@ namespace AzaanService
         private readonly ICaster caster;
         private readonly IConfiguration configuration;
         private readonly JsonSerializerOptions serializeOptions = new JsonSerializerOptions();
+        private List<string> targetDevices = new List<string>();
 
         public Worker(ILogger<Worker> logger, ICaster caster, IConfiguration configuration)
         {
@@ -34,8 +35,20 @@ namespace AzaanService
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
             this.logger.LogInformation("Starting the caster: {time}", DateTimeOffset.Now);
             this.caster.Subscribe();
-            string targetDevice = this.configuration["azaan:target"];
-            this.logger.LogInformation(@$"Listening for castable devices... ({targetDevice})");
+            foreach (IConfigurationSection target in this.configuration.GetSection("azaan:target").GetChildren())
+            {
+                this.targetDevices.Add(target.Value);
+            }
+
+            if (!this.targetDevices.Any())
+            {
+                this.logger.LogWarning("No target devices found in configuration. No casting will be done.");
+            }
+            else
+            {
+                this.targetDevices.ForEach(t => this.logger.LogInformation(@$"Listening for castable devices... ({t})"));
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 this.logger.LogInformation("New daily cycle.");
@@ -56,7 +69,10 @@ namespace AzaanService
                         DateTime actionable = q.Dequeue();
                         this.logger.LogInformation($"Broadcasting {actionable}");
 
-                        await Broadcast();
+                        foreach (string targetDevice in this.targetDevices)
+                        {
+                            await this.Broadcast(targetDevice);
+                        }
                     }
 
                     await Task.Delay(int.Parse(this.configuration["azaan:delay"]), stoppingToken);
@@ -121,9 +137,8 @@ namespace AzaanService
             return r;
         }
 
-        private async Task Broadcast()
+        private async Task Broadcast(string targetDevice)
         {
-            string targetDevice = this.configuration["azaan:target"];
             if (this.caster.Knows(targetDevice))
             {
                 bool connected = await this.caster.Connect(targetDevice);
@@ -133,21 +148,21 @@ namespace AzaanService
                     bool played = await this.caster.Play(this.configuration["azaan:source"]);
                     if (!played)
                     {
-                        this.logger.LogError($"Could not play to {targetDevice}. Not playing.");
+                        this.logger.LogWarning($"Could not play to {targetDevice}. Not playing.");
                     }
 
                     this.caster.Disconnect(targetDevice);
                 }
                 else
                 {
-                    this.logger.LogError($"Could not connect to device {targetDevice}. Not playing.");
+                    this.logger.LogWarning($"Could not connect to device {targetDevice}. Not playing.");
                 }
 
                 this.logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             }
             else
             {
-                this.logger.LogError($"Could not locate device {targetDevice}. Not playing.");
+                this.logger.LogWarning($"Could not locate device {targetDevice}. Not playing.");
             }
         }
     }

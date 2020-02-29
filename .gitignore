@@ -5,3 +5,4 @@ obj/
 /.idea/
 /AzaanService/*.blob
 /AzaanService/azaan.conf
+/AzaanService/azaan.service
