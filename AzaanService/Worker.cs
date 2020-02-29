@@ -61,7 +61,7 @@ namespace AzaanService
                     this.logger.LogInformation($"service spin up at {DateTime.Now}, discarding {item}");
                 }
 
-                this.logger.LogInformation($"Entering actionable loop with {q.Count}");
+                this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
                 while (q.Any())
                 {
                     if (q.Peek() < DateTime.Now)
@@ -144,7 +144,7 @@ namespace AzaanService
                 bool connected = await this.caster.Connect(targetDevice);
                 if (connected)
                 {
-                    this.logger.LogInformation("Casting..", DateTimeOffset.Now);
+                    this.logger.LogInformation($"Casting to {targetDevice}..", DateTimeOffset.Now);
                     bool played = await this.caster.Play(this.configuration["azaan:source"]);
                     if (!played)
                     {
