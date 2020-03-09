@@ -13,6 +13,7 @@ namespace AzaanService.Core
             this.Asr = DateTime.MinValue;
             this.Dhuhr = DateTime.MinValue;
             this.Fajr = DateTime.MinValue;
+            this.Shurooq = DateTime.MinValue;
         }
 
         public DateTime Isha { get; set; }
@@ -24,11 +25,13 @@ namespace AzaanService.Core
         public DateTime Dhuhr { get; set; }
 
         public DateTime Fajr { get; set; }
+        public DateTime Shurooq { get; set; }
 
         public Queue<DateTime> AsQueue()
         {
             Queue<DateTime> q = new Queue<DateTime>();
             q.Enqueue(this.Fajr);
+            q.Enqueue(this.Shurooq);
             q.Enqueue(this.Dhuhr);
             q.Enqueue(this.Asr);
             q.Enqueue(this.Magrib);
@@ -41,7 +44,8 @@ namespace AzaanService.Core
             && this.Magrib != DateTime.MinValue
             && this.Asr != DateTime.MinValue
             && this.Dhuhr != DateTime.MinValue
-            && this.Fajr != DateTime.MinValue;
+            && this.Fajr != DateTime.MinValue
+            && this.Shurooq != DateTime.MinValue;
 
         public override string ToString()
         {
@@ -51,6 +55,7 @@ namespace AzaanService.Core
             b.AppendLine($"Asr: {this.Asr}");
             b.AppendLine($"Maghrib: {this.Magrib}");
             b.AppendLine($"Isha: {this.Isha}");
+            b.AppendLine($"Shurooq: {this.Shurooq}");
             return b.ToString();
         }
     }

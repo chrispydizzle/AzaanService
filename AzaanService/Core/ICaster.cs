@@ -12,5 +12,6 @@ namespace AzaanService.Core
         public bool Knows(string friendlyName);
         public Task<bool> Play(string contentLink);
         public bool Connected { get; set; }
+        Task Broadcast();
     }
 }

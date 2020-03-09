@@ -14,7 +14,7 @@ namespace AzaanService
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
 
-    public class Worker : BackgroundService
+    public class Worker2 : BackgroundService
     {
         private readonly ILogger<Worker> logger;
         private readonly ICaster casterSet;
@@ -22,7 +22,7 @@ namespace AzaanService
         private readonly JsonSerializerOptions serializeOptions = new JsonSerializerOptions();
         private readonly List<string> targetDevices = new List<string>();
 
-        public Worker(ILogger<Worker> logger, ICaster casterSet, IConfiguration configuration)
+        public Worker2(ILogger<Worker> logger, ICaster casterSet, IConfiguration configuration)
         {
             this.serializeOptions.Converters.Add(new AzaanTimeConverter());
             this.logger = logger;

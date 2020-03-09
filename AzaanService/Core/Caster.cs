@@ -17,9 +17,11 @@ namespace AzaanService.Core
         private IDisposable subscription;
         private DeviceLocator deviceLocator;
         private IMediaChannel mediaChannel;
+        private readonly string target;
 
-        public Caster(IConfiguration config, ILogger<Worker> logger)
+        public Caster(IConfiguration config, ILogger<Worker> logger, string target)
         {
+            this.target = target;
             this.config = config;
             this.logger = logger;
         }
@@ -32,6 +34,35 @@ namespace AzaanService.Core
         }
 
         public bool Connected { get; set; }
+
+        public async Task Broadcast()
+        {
+            if (this.Knows(this.target))
+            {
+                bool connected = await this.Connect(this.target);
+                if (connected)
+                {
+                    this.logger.LogInformation($"Casting to {this.target}..", DateTimeOffset.Now);
+                    bool played = await this.Play(this.config["azaan:source"]);
+                    if (!played)
+                    {
+                        this.logger.LogWarning($"Could not play to {this.target}. Not playing.");
+                    }
+
+                    this.Disconnect(this.target);
+                }
+                else
+                {
+                    this.logger.LogWarning($"Could not connect to device {this.target}. Not playing.");
+                }
+
+                this.logger.LogInformation("Caster running at: {time}", DateTimeOffset.Now);
+            }
+            else
+            {
+                this.logger.LogWarning($"Could not locate device {this.target}. Not playing.");
+            }
+        }
 
         public void Unsubscribe()
         {
@@ -51,10 +82,11 @@ namespace AzaanService.Core
         public void OnNext(IReceiver value)
         {
             IReceiver receiver = value;
-
             this.logger.LogInformation($"Found {value.FriendlyName} @ ${value.IPEndPoint}");
-
-            this.Add(receiver);
+            if (value.FriendlyName == this.target)
+            {
+                this.Add(receiver);
+            }
         }
 
         public async Task<bool> Connect(string byName)

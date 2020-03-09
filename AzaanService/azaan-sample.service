@@ -1,0 +1,19 @@
+[Unit]
+Description=Azaan Service
+After=network.target network-online.target dbus.service
+Wants=network-online.target
+Requires=dbus.service
+
+[Service]
+WorkingDirectory=/opt/azaan/
+ExecStart=/usr/bin/dotnet /opt/azaan/AzaanService.dll
+#OR: ExecStart=/opt/azaan/AzaanService
+User=azaan
+Group=azaan
+Restart=on-abort
+RestartSec=10
+SyslogIdentifier=azaan.service
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target

@@ -22,7 +22,7 @@ namespace AzaanService
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<Worker>();
-                    services.AddSingleton<ICaster, Caster>();
+                    services.AddSingleton<ICaster, CasterSet>();
                 });
     }
 }
