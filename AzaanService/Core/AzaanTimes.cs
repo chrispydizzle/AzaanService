@@ -44,8 +44,7 @@ namespace AzaanService.Core
             && this.Magrib != DateTime.MinValue
             && this.Asr != DateTime.MinValue
             && this.Dhuhr != DateTime.MinValue
-            && this.Fajr != DateTime.MinValue
-            && this.Shurooq != DateTime.MinValue;
+            && this.Fajr != DateTime.MinValue;
 
         public override string ToString()
         {

@@ -83,43 +83,43 @@ namespace AzaanService
             Task<Stream> result = c.GetStreamAsync(url);
             JsonDocument jd = JsonDocument.Parse(await result);
             AzaanTimes r = new AzaanTimes();
-            foreach (JsonElement jsonElement in jd.RootElement.GetProperty("items").EnumerateArray())
-            {
-                string dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
-                foreach (JsonProperty jsonProperty in jsonElement.EnumerateObject())
-                {
-                    this.logger.LogInformation($"{jsonProperty.Name}: {jsonProperty.Value}");
-                    string propertyName = jsonProperty.Name;
-                    string val = jsonProperty.Value.GetString();
 
-                    switch (propertyName)
-                    {
-                        case "date_for":
-                            dateFor = val;
-                            break;
-                        case "fajr":
-                            r.Fajr = AzaanTimeConverter.CustomParse(dateFor, val);
-                            break;
-                        case "dhuhr":
-                            r.Dhuhr = AzaanTimeConverter.CustomParse(dateFor, val);
-                            break;
-                        case "asr":
-                            r.Asr = AzaanTimeConverter.CustomParse(dateFor, val);
-                            break;
-                        case "maghrib":
-                            r.Magrib = AzaanTimeConverter.CustomParse(dateFor, val);
-                            break;
-                        case "isha":
-                            r.Isha = AzaanTimeConverter.CustomParse(dateFor, val);
-                            break;
-                        case "shurooq":
-                            r.Shurooq = AzaanTimeConverter.CustomParse(dateFor, val);
-                            break;
-                    }
+            //foreach (JsonProperty jsonElement in jd.RootElement.GetProperty("data").EnumerateObject().First().Value)
+            JsonElement jsonElement = jd.RootElement.GetProperty("data").EnumerateObject().FirstOrDefault().Value;
+            string dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
+            foreach (JsonProperty jsonProperty in jsonElement.EnumerateObject())
+            {
+                this.logger.LogInformation($"{jsonProperty.Name}: {jsonProperty.Value}");
+                string propertyName = jsonProperty.Name.ToLower();
+                string val = jsonProperty.Value.GetString();
+
+                switch (propertyName)
+                {
+                    case "date_for":
+                        dateFor = val;
+                        break;
+                    case "Sunrise": //fajr
+                        // r.Fajr = AzaanTimeConverter.CustomParse(dateFor, val);
+                        break;
+                    case "dhuhr":
+                        r.Dhuhr = AzaanTimeConverter.CustomParse(dateFor, val);
+                        break;
+                    case "asr":
+                        r.Asr = AzaanTimeConverter.CustomParse(dateFor, val);
+                        break;
+                    case "maghrib":
+                        r.Magrib = AzaanTimeConverter.CustomParse(dateFor, val);
+                        break;
+                    case "isha":
+                        r.Isha = AzaanTimeConverter.CustomParse(dateFor, val);
+                        break;
+                    case "shurooq":
+                        //r.Shurooq = AzaanTimeConverter.CustomParse(dateFor, val);
+                        break;
                 }
             }
 
-            if (!r.IsFilled()) throw new InvalidOperationException($"Something's wrong: {jd.ToString()}");
+            if (!r.IsFilled()) this.logger.LogWarning($"Something's wrong: {jd.ToString()}");
 
             return r;
         }

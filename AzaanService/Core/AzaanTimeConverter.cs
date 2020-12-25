@@ -74,9 +74,14 @@ namespace AzaanService.Core
             return r;
         }
 
-        public static DateTime CustomParse(string dateString, string timeString)
+        public static DateTime CustomParse3(string dateString, string timeString)
         {
             return DateTime.ParseExact($"{dateString} {timeString}", "yyyy-M-d h:mm tt", CultureInfo.InvariantCulture);
+        }
+
+        public static DateTime CustomParse(string dateString, string timeString)
+        {
+            return DateTime.ParseExact($"{dateString} {timeString}", "yyyy-M-d HH:mm", CultureInfo.InvariantCulture);
         }
 
         public override void Write(Utf8JsonWriter writer, AzaanTimes value, JsonSerializerOptions options)
