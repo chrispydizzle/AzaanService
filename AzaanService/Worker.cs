@@ -42,13 +42,13 @@ namespace AzaanService
                 AzaanTimes times = await GetBroadcastTimes();
                 this.logger.LogInformation(times.ToString());
                 Queue<DateTime> q = times.AsQueue();
-                while (q.Peek() < DateTime.Now)
+                while (q.Any() && q.Peek() < DateTime.Now)
                 {
                     DateTime item = q.Dequeue();
                     this.logger.LogInformation($"service spin up at {DateTime.Now}, discarding {item}");
                 }
 
-                this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
+                if(q.Any()) this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
                 while (q.Any())
                 {
                     if (q.Peek() < DateTime.Now)
@@ -80,8 +80,8 @@ namespace AzaanService
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             c.DefaultRequestHeaders.Add("User-Agent", "AzaanService 2.0");
             string url = $"{this.configuration["azaan:apitarget"]}{this.configuration["azaan:apikey"]}";
-            Task<Stream> result = c.GetStreamAsync(url);
-            JsonDocument jd = JsonDocument.Parse(await result);
+            Stream result = await c.GetStreamAsync(url);
+            JsonDocument jd = JsonDocument.Parse(result);
             AzaanTimes r = new AzaanTimes();
 
             //foreach (JsonProperty jsonElement in jd.RootElement.GetProperty("data").EnumerateObject().First().Value)
