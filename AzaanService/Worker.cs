@@ -1,11 +1,13 @@
 namespace AzaanService
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Text;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -48,7 +50,7 @@ namespace AzaanService
                     this.logger.LogInformation($"service spin up at {DateTime.Now}, discarding {item}");
                 }
 
-                if(q.Any()) this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
+                if (q.Any()) this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
                 while (q.Any())
                 {
                     if (q.Peek() < DateTime.Now)
@@ -98,8 +100,8 @@ namespace AzaanService
                     case "date_for":
                         dateFor = val;
                         break;
-                    case "Sunrise": //fajr
-                        // r.Fajr = AzaanTimeConverter.CustomParse(dateFor, val);
+                    case "sunrise": //fajr
+                        r.Fajr = AzaanTimeConverter.CustomParse(dateFor, val);
                         break;
                     case "dhuhr":
                         r.Dhuhr = AzaanTimeConverter.CustomParse(dateFor, val);
@@ -119,7 +121,10 @@ namespace AzaanService
                 }
             }
 
-            if (!r.IsFilled()) this.logger.LogWarning($"Something's wrong: {jd.ToString()}");
+            if (r.IsFilled()) return r;
+            
+            this.logger.LogWarning($"Something's wrong: {jd.RootElement.ToString()}");
+            this.logger.LogTrace(r.ToString());
 
             return r;
         }
