@@ -126,7 +126,7 @@ namespace AzaanService
 
         private async Task Broadcast()
         {
-            await this.casterSet.Broadcast();
+            // await this.casterSet.Broadcast();
         }
     }
 }

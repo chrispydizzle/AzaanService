@@ -78,13 +78,13 @@ namespace AzaanService.Core
 
         public bool Connected { get; set; }
 
-        public async Task Broadcast()
+        public async Task Broadcast(string path)
         {
             Task[] casting = new Task[this.casters.Count];
             int counter = 0;
             foreach (KeyValuePair<string, ICaster> kvp in this.casters)
             {
-                casting[counter] = kvp.Value.Broadcast();
+                casting[counter] = kvp.Value.Broadcast(path);
                 counter++;
             }
 

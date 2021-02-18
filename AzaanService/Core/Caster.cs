@@ -35,7 +35,7 @@ namespace AzaanService.Core
 
         public bool Connected { get; set; }
 
-        public async Task Broadcast()
+        public async Task Broadcast(string path)
         {
             if (this.Knows(this.target))
             {
@@ -43,7 +43,7 @@ namespace AzaanService.Core
                 if (connected)
                 {
                     this.logger.LogInformation($"Casting to {this.target}..", DateTimeOffset.Now);
-                    bool played = await this.Play(this.config["azaan:source"]);
+                    bool played = await this.Play(path);
                     if (!played)
                     {
                         this.logger.LogWarning($"Could not play to {this.target}. Not playing.");

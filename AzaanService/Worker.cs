@@ -5,8 +5,6 @@ namespace AzaanService
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Text;
     using System.Text.Json;
     using System.Threading;
@@ -23,6 +21,8 @@ namespace AzaanService
         private readonly IConfiguration configuration;
         private readonly JsonSerializerOptions serializeOptions = new JsonSerializerOptions();
         private readonly List<string> targetDevices = new List<string>();
+        private readonly BroadcastTimeService timeService;
+        private string[] files;
 
         public Worker(ILogger<Worker> logger, ICaster casterSet, IConfiguration configuration)
         {
@@ -30,18 +30,27 @@ namespace AzaanService
             this.logger = logger;
             this.casterSet = casterSet;
             this.configuration = configuration;
+            this.timeService = new BroadcastTimeService(this.logger, $"{this.configuration["azaan:apitarget"]}");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            this.files = Directory.GetFiles(this.configuration["azaan:source"], "*.opus");
+            for (int i = 0; i < this.files.Length; i++)
+            {
+                this.files[i] = $"http://home.cpsharp.net/{Path.GetFileName(this.files[i])}";
+            }
+
+            Random r = new Random();
+
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
             this.logger.LogInformation("Starting the caster: {time}", DateTimeOffset.Now);
-            casterSet.Subscribe();
+            this.casterSet.Subscribe();
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 this.logger.LogInformation("New daily cycle.");
-                AzaanTimes times = await GetBroadcastTimes();
+                AzaanTimes times = await this.timeService.GetBroadcastTimes();
                 this.logger.LogInformation(times.ToString());
                 Queue<DateTime> q = times.AsQueue();
                 while (q.Any() && q.Peek() < DateTime.Now)
@@ -55,10 +64,10 @@ namespace AzaanService
                 {
                     if (q.Peek() < DateTime.Now)
                     {
+                        int chosen = r.Next(files.Length - 1);
                         DateTime actionable = q.Dequeue();
                         this.logger.LogInformation($"Broadcasting {actionable}");
-
-                        await this.Broadcast();
+                        await this.Broadcast(this.files[chosen]);
                     }
 
                     await Task.Delay(int.Parse(this.configuration["azaan:delay"]), stoppingToken);
@@ -75,63 +84,9 @@ namespace AzaanService
             this.logger.LogError($"{sender}: {e}");
         }
 
-        private async Task<AzaanTimes> GetBroadcastTimes()
+        private async Task Broadcast(string path)
         {
-            HttpClient c = new HttpClient();
-            c.DefaultRequestHeaders.Accept.Clear();
-            c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            c.DefaultRequestHeaders.Add("User-Agent", "AzaanService 2.0");
-            string url = $"{this.configuration["azaan:apitarget"]}{this.configuration["azaan:apikey"]}";
-            Stream result = await c.GetStreamAsync(url);
-            JsonDocument jd = JsonDocument.Parse(result);
-            AzaanTimes r = new AzaanTimes();
-
-            //foreach (JsonProperty jsonElement in jd.RootElement.GetProperty("data").EnumerateObject().First().Value)
-            JsonElement jsonElement = jd.RootElement.GetProperty("data").EnumerateObject().FirstOrDefault().Value;
-            string dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
-            foreach (JsonProperty jsonProperty in jsonElement.EnumerateObject())
-            {
-                this.logger.LogInformation($"{jsonProperty.Name}: {jsonProperty.Value}");
-                string propertyName = jsonProperty.Name.ToLower();
-                string val = jsonProperty.Value.GetString();
-
-                switch (propertyName)
-                {
-                    case "date_for":
-                        dateFor = val;
-                        break;
-                    case "sunrise": //fajr
-                        r.Fajr = AzaanTimeConverter.CustomParse(dateFor, val);
-                        break;
-                    case "dhuhr":
-                        r.Dhuhr = AzaanTimeConverter.CustomParse(dateFor, val);
-                        break;
-                    case "asr":
-                        r.Asr = AzaanTimeConverter.CustomParse(dateFor, val);
-                        break;
-                    case "maghrib":
-                        r.Magrib = AzaanTimeConverter.CustomParse(dateFor, val);
-                        break;
-                    case "isha":
-                        r.Isha = AzaanTimeConverter.CustomParse(dateFor, val);
-                        break;
-                    case "shurooq":
-                        //r.Shurooq = AzaanTimeConverter.CustomParse(dateFor, val);
-                        break;
-                }
-            }
-
-            if (r.IsFilled()) return r;
-            
-            this.logger.LogWarning($"Something's wrong: {jd.RootElement.ToString()}");
-            this.logger.LogTrace(r.ToString());
-
-            return r;
-        }
-
-        private async Task Broadcast()
-        {
-            await this.casterSet.Broadcast();
+            await this.casterSet.Broadcast(path);
         }
     }
 }
