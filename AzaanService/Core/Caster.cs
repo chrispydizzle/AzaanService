@@ -14,9 +14,9 @@ namespace AzaanService.Core
         private readonly IConfiguration config;
         private readonly ILogger<Worker> logger;
         private readonly Dictionary<string, IReceiver> list = new Dictionary<string, IReceiver>();
-        private IDisposable subscription;
-        private DeviceLocator deviceLocator;
-        private IMediaChannel mediaChannel;
+        private IDisposable? subscription;
+        private DeviceLocator? deviceLocator;
+        private IMediaChannel? mediaChannel;
         private readonly string target;
 
         public Caster(IConfiguration config, ILogger<Worker> logger, string target)
@@ -66,7 +66,7 @@ namespace AzaanService.Core
 
         public void Unsubscribe()
         {
-            subscription.Dispose();
+            subscription?.Dispose();
         }
 
         public void OnCompleted()
@@ -110,7 +110,7 @@ namespace AzaanService.Core
         {
             IReceiver receiver = this.Get(byName);
             this.logger.LogInformation("dropping connection...");
-            this.mediaChannel.Sender.Disconnect();
+            this.mediaChannel?.Sender.Disconnect();
             this.Connected = false;
             return true;
         }
@@ -120,9 +120,13 @@ namespace AzaanService.Core
             MediaInformation mediaInformation = new MediaInformation();
             mediaInformation.ContentId = contentLink;
             mediaInformation.ContentType = "audio/x-wav";
-            await mediaChannel.LoadAsync(mediaInformation);
-            await mediaChannel.PlayAsync();
-            return true;
+            if(mediaChannel != null) { 
+                await mediaChannel.LoadAsync(mediaInformation);
+                await mediaChannel.PlayAsync();
+                return true;
+            }
+
+            return false;
         }
 
         public bool Knows(string friendlyName)

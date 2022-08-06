@@ -22,7 +22,7 @@ namespace AzaanService
         private readonly JsonSerializerOptions serializeOptions = new JsonSerializerOptions();
         private readonly List<string> targetDevices = new List<string>();
         private readonly BroadcastTimeService timeService;
-        private string[] files;
+        private string[]? files;
 
         public Worker(ILogger<Worker> logger, ICaster casterSet, IConfiguration configuration)
         {
@@ -38,7 +38,7 @@ namespace AzaanService
             this.files = Directory.GetFiles(this.configuration["azaan:source"], "*.opus");
             for (int i = 0; i < this.files.Length; i++)
             {
-                this.files[i] = $"http://home.cpsharp.net/{Path.GetFileName(this.files[i])}";
+                this.files[i] = $"http://192.168.1.10/{Path.GetFileName(this.files[i])}";
             }
 
             Random r = new Random();
@@ -49,30 +49,38 @@ namespace AzaanService
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                this.logger.LogInformation("New daily cycle.");
-                AzaanTimes times = await this.timeService.GetBroadcastTimes();
-                this.logger.LogInformation(times.ToString());
-                Queue<DateTime> q = times.AsQueue();
-                while (q.Any() && q.Peek() < DateTime.Now)
-                {
-                    DateTime item = q.Dequeue();
-                    this.logger.LogInformation($"service spin up at {DateTime.Now}, discarding {item}");
-                }
-
-                if (q.Any()) this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
-                while (q.Any())
-                {
-                    if (q.Peek() < DateTime.Now)
+                try { 
+                    this.logger.LogInformation("New daily cycle.");
+                    AzaanTimes times = await this.timeService.GetBroadcastTimes();
+                    this.logger.LogInformation(times.ToString());
+                    Queue<DateTime> q = times.AsQueue();
+                    while (q.Any() && q.Peek() < DateTime.Now - TimeSpan.FromMinutes(20))
                     {
-                        int chosen = r.Next(files.Length - 1);
-                        DateTime actionable = q.Dequeue();
-                        this.logger.LogInformation($"Broadcasting {actionable}");
-                        await this.Broadcast(this.files[chosen]);
+                        DateTime item = q.Dequeue();
+                        this.logger.LogInformation($"service spin up at {DateTime.Now}, discarding {item}");
                     }
 
-                    await Task.Delay(int.Parse(this.configuration["azaan:delay"]), stoppingToken);
-                }
+                    if (q.Any()) this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
+                    while (q.Any())
+                    {
+                        if (q.Peek() < DateTime.Now)
+                        {
+                            int chosen = r.Next(files.Length - 1);
+                            DateTime actionable = q.Dequeue();
+                            this.logger.LogInformation($"Broadcasting {actionable}: {this.files[chosen]}");
+                             await this.Broadcast(this.files[chosen]);
+                            if(q.Any())
+                                this.logger.LogInformation($"Next broadcast: {q.Peek()}");
+                        }
 
+                        await Task.Delay(int.Parse(this.configuration["azaan:delay"]), stoppingToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.logger.LogError(ex.ToString());
+                }
+                
                 TimeSpan sleepTime = DateTime.Today.AddDays(1) - DateTime.Now;
                 this.logger.LogInformation($"Finished daily routine. Sleeping till midnight {sleepTime}. Goodbye.");
                 await Task.Delay(sleepTime, stoppingToken);

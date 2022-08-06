@@ -1,4 +1,4 @@
-namespace AzaanService
+/*namespace AzaanService
 {
     using System;
     using System.Collections.Generic;
@@ -129,4 +129,4 @@ namespace AzaanService
             // await this.casterSet.Broadcast();
         }
     }
-}
+}*/

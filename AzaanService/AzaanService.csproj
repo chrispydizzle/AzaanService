@@ -4,6 +4,7 @@
         <TargetFramework>net5.0</TargetFramework>
         <UserSecretsId>dotnet-AzaanService-66641CD0-A6F5-4474-A3BE-C229C2F84417</UserSecretsId>
         <Nullable>enable</Nullable>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -11,6 +12,13 @@
         <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="3.1.2" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.2" />
         <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="3.1.2" />
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.14.0" />
         <PackageReference Include="System.Text.Json" Version="4.7.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="azaan.conf">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 </Project>

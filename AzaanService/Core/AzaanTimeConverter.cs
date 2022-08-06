@@ -40,7 +40,7 @@ namespace AzaanService.Core
 
                 if (reader.TokenType == JsonTokenType.PropertyName)
                 {
-                    string propertyName = reader.GetString();
+                    string propertyName = reader.GetString() ?? "";
                     reader.Read();
                     string dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
                     switch (propertyName)
@@ -74,12 +74,12 @@ namespace AzaanService.Core
             return r;
         }
 
-        public static DateTime CustomParse3(string dateString, string timeString)
+        public static DateTime CustomParse3(string dateString, string? timeString)
         {
             return DateTime.ParseExact($"{dateString} {timeString}", "yyyy-M-d h:mm tt", CultureInfo.InvariantCulture);
         }
 
-        public static DateTime CustomParse(string dateString, string timeString)
+        public static DateTime CustomParse(string dateString, string? timeString)
         {
             return DateTime.ParseExact($"{dateString} {timeString}", "yyyy-M-d HH:mm", CultureInfo.InvariantCulture);
         }

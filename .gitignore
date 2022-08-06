@@ -6,3 +6,4 @@ obj/
 /AzaanService/*.blob
 /AzaanService/azaan.conf
 /AzaanService/azaan.service
+/.vs

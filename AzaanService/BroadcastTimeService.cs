@@ -39,7 +39,7 @@ namespace AzaanService
             {
                 this.logger.LogInformation($"{jsonProperty.Name}: {jsonProperty.Value}");
                 string propertyName = jsonProperty.Name.ToLower();
-                string val = jsonProperty.Value.GetString();
+                string val = jsonProperty.Value.GetString() ?? "";
 
                 switch (propertyName)
                 {

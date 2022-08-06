@@ -17,7 +17,7 @@ namespace AzaanService
                 .UseSystemd()
                 .ConfigureAppConfiguration((hostBuilderContext, config) =>
                 {
-                    config.AddIniFile("/etc/azaan.conf", optional:false, reloadOnChange:true);
+                    config.AddIniFile("azaan.conf", optional:false, reloadOnChange:true);
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
