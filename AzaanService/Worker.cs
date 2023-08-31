@@ -29,7 +29,6 @@ namespace AzaanService
             this.casterSet = casterSet;
             this.configuration = configuration;
             this.timeService = new BroadcastTimeService(this.logger, $"{this.configuration["azaan:apitarget"]}");
-
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
