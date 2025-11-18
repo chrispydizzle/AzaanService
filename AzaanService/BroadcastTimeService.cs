@@ -10,36 +10,27 @@ namespace AzaanService
     using Core;
     using Microsoft.Extensions.Logging;
 
-    public class BroadcastTimeService
+    public class BroadcastTimeService(ILogger<Worker> logger, string url)
     {
-        private readonly ILogger<Worker> logger;
-        private readonly string url;
-
-        public BroadcastTimeService(ILogger<Worker> logger, string url)
-        {
-            this.logger = logger;
-            this.url = url;
-        }
-
         public async Task<AzaanTimes> GetBroadcastTimes()
         {
-            HttpClient c = new HttpClient();
+            HttpClient c = new();
             c.DefaultRequestHeaders.Accept.Clear();
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             c.DefaultRequestHeaders.Add("User-Agent", "AzaanService 2.0");
-            string url = this.url;
+            Console.WriteLine(url);
             Stream result = await c.GetStreamAsync(url);
-            JsonDocument jd = JsonDocument.Parse(result);
-            AzaanTimes r = new AzaanTimes();
+            JsonDocument jd = await JsonDocument.ParseAsync(result);
+            AzaanTimes r = new();
 
             //foreach (JsonProperty jsonElement in jd.RootElement.GetProperty("data").EnumerateObject().First().Value)
             JsonElement jsonElement = jd.RootElement.GetProperty("data").EnumerateObject().FirstOrDefault().Value;
-            string dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
+            var dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
             foreach (JsonProperty jsonProperty in jsonElement.EnumerateObject())
             {
-                this.logger.LogInformation($"{jsonProperty.Name}: {jsonProperty.Value}");
-                string propertyName = jsonProperty.Name.ToLower();
-                string val = jsonProperty.Value.GetString() ?? "";
+                logger.LogInformation("{JsonPropertyName}: {JsonPropertyValue}", jsonProperty.Name, jsonProperty.Value);
+                var propertyName = jsonProperty.Name.ToLower();
+                var val = jsonProperty.Value.GetString() ?? "";
 
                 switch (propertyName)
                 {
@@ -55,7 +46,7 @@ namespace AzaanService
                     case "asr":
                         r.Asr = AzaanTimeConverter.CustomParse(dateFor, val);
                         break;
-                    case "maghrib":
+                    case "sunset":
                         r.Magrib = AzaanTimeConverter.CustomParse(dateFor, val);
                         break;
                     case "isha":
@@ -69,8 +60,8 @@ namespace AzaanService
 
             if (r.IsFilled()) return r;
 
-            this.logger.LogWarning($"Something's wrong: {jd.RootElement.ToString()}");
-            this.logger.LogTrace(r.ToString());
+            logger.LogWarning("Something's wrong: {Root}", jd.RootElement.ToString());
+            logger.LogTrace(r.ToString());
 
             return r;
         }

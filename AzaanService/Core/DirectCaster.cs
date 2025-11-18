@@ -2,25 +2,23 @@ namespace AzaanService.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using System.Threading.Tasks;
     using GoogleCast;
     using GoogleCast.Channels;
     using GoogleCast.Models.Media;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
 
-    public class Caster(ILogger<Worker> logger, string target)
+    public class DirectCaster(IConfiguration config, ILogger<Worker> logger, string target)
         : ICaster
     {
+        private readonly IConfiguration config = config;
         private readonly Dictionary<string, IReceiver> list = new();
-        private IDisposable? subscription;
-        private DeviceLocator? deviceLocator;
         private IMediaChannel? mediaChannel;
 
         public void Subscribe()
         {
-            this.deviceLocator = new DeviceLocator();
-            IObservable<IReceiver> observable = deviceLocator.FindReceiversContinuous();
-            this.subscription = observable.Subscribe(this.OnNext);
         }
 
         public bool Connected { get; set; }
@@ -32,7 +30,7 @@ namespace AzaanService.Core
                 var connected = await this.Connect(target);
                 if (connected)
                 {
-                    logger.LogInformation("Casting to {Target}..{Timestamp}", target, DateTimeOffset.Now);
+                    logger.LogInformation("Casting to {Target}..{TimeStamp}", target, DateTimeOffset.Now);
                     var played = await this.Play(path);
                     if (!played)
                     {
@@ -56,7 +54,7 @@ namespace AzaanService.Core
 
         public void Unsubscribe()
         {
-            subscription?.Dispose();
+            this.Disconnect(target);
         }
 
         public void OnCompleted()
@@ -79,13 +77,17 @@ namespace AzaanService.Core
             }
         }
 
-        public async Task<bool> Connect(string byName)
+        public async Task<bool> Connect(string ipAddress)
         {
-            IReceiver receiver = this.Get(byName);
+            // Create the IPEndPoint
+            IPEndPoint ipEndPoint = new(IPAddress.Parse(ipAddress), 8009);
+
+            IReceiver receiver = new Receiver() { IPEndPoint = ipEndPoint };
+            this.Add(receiver);
             Sender sender = new();
+            await sender.ConnectAsync(receiver);
 
             logger.LogInformation("Connecting...");
-            await sender.ConnectAsync(receiver);
 
 
             IMediaChannel mChannel = sender.GetChannel<IMediaChannel>();
@@ -121,17 +123,14 @@ namespace AzaanService.Core
 
         public bool Knows(string friendlyName)
         {
-            lock (this.list)
-            {
-                return this.list.ContainsKey(friendlyName);
-            }
+            return true;
         }
 
         private void Add(IReceiver value)
         {
             lock (this.list)
             {
-                this.list.Add(value.FriendlyName, value);
+                this.list.Add(value.IPEndPoint.Address.ToString(), value);
             }
         }
 

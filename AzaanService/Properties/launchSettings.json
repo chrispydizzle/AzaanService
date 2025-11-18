@@ -4,7 +4,14 @@
       "commandName": "Project",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
-      }
+      },
+      "hotReloadEnabled": false
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "DockerfileRunArguments": "-v C:\\Users\\posad\\OneDrive\\Code\\www\\www\\html:/app/resources -p 13337:13337",
+      "containerName": "Azaan.Dev",
+      "publishAllPorts": false
     }
   }
 }

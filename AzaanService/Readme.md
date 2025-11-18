@@ -1,0 +1,1 @@
+docker run --volume={localpath}:/app/resources --restart=unless-stopped -d --name Azaan azaanservice:latest

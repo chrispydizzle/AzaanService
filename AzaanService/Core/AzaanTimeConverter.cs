@@ -30,7 +30,7 @@ namespace AzaanService.Core
                 throw new JsonException("Something's wrong...");
             }
 
-            AzaanTimes r = new AzaanTimes();
+            AzaanTimes r = new();
             while (reader.Read() && reader.CurrentDepth == 3)
             {
                 if (reader.TokenType == JsonTokenType.EndObject)
@@ -40,9 +40,9 @@ namespace AzaanService.Core
 
                 if (reader.TokenType == JsonTokenType.PropertyName)
                 {
-                    string propertyName = reader.GetString() ?? "";
+                    var propertyName = reader.GetString() ?? "";
                     reader.Read();
-                    string dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
+                    var dateFor = $"{DateTime.Today.Year}-{DateTime.Today.Month}-{DateTime.Today.Day}";
                     switch (propertyName)
                     {
                         case "date_for":

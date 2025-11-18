@@ -7,3 +7,7 @@ obj/
 /AzaanService/azaan.conf
 /AzaanService/azaan.service
 /.vs
+/AzaanService/Properties/serviceDependencies.json
+/AzaanService/Properties/serviceDependencies.local.json
+/AzaanService/Properties/serviceDependencies.local.json.user
+/AzaanService/azaan.dev.conf

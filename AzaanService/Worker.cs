@@ -17,30 +17,23 @@ namespace AzaanService
         private readonly ILogger<Worker> logger;
         private readonly ICaster casterSet;
         private readonly IConfiguration configuration;
-        private readonly JsonSerializerOptions serializeOptions = new JsonSerializerOptions();
-        private readonly List<string> targetDevices = new List<string>();
+        private readonly IFileManager fileManager;
+        private readonly JsonSerializerOptions serializeOptions = new();
+        private readonly List<string> targetDevices = new();
         private readonly BroadcastTimeService timeService;
-        private string[]? files;
 
-        public Worker(ILogger<Worker> logger, ICaster casterSet, IConfiguration configuration)
+        public Worker(ILogger<Worker> logger, ICaster casterSet, IConfiguration configuration, IFileManager fileManager)
         {
             this.serializeOptions.Converters.Add(new AzaanTimeConverter());
             this.logger = logger;
             this.casterSet = casterSet;
             this.configuration = configuration;
             this.timeService = new BroadcastTimeService(this.logger, $"{this.configuration["azaan:apitarget"]}");
+            this.fileManager = fileManager;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            this.files = Directory.GetFiles(this.configuration["azaan:source"], "*.opus");
-            for (int i = 0; i < this.files.Length; i++)
-            {
-                this.files[i] = $"{this.configuration["azaan:urlpath"]}/{Path.GetFileName(this.files[i])}";
-            }
-
-            Random r = new Random();
-
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
             this.logger.LogInformation("Starting the caster: {time}", DateTimeOffset.Now);
             this.casterSet.Subscribe();
@@ -56,23 +49,23 @@ namespace AzaanService
                     while (q.Any() && q.Peek() < DateTime.Now - TimeSpan.FromMinutes(20))
                     {
                         DateTime item = q.Dequeue();
-                        this.logger.LogInformation($"service spin up at {DateTime.Now}, discarding {item}");
+                        this.logger.LogInformation("service spin up at {DateTime}, discarding {Item}", DateTime.Now, item);
                     }
 
-                    if (q.Any()) this.logger.LogInformation($"Entering actionable loop with {q.Count}, next broadcast at {q.Peek()}");
+                    if (q.Any()) this.logger.LogInformation("Entering actionable loop with {QCount}, next broadcast at {DateTime}", q.Count, q.Peek());
                     while (q.Any())
                     {
                         if (q.Peek() < DateTime.Now)
                         {
-                            int chosen = r.Next(files.Length - 1);
                             DateTime actionable = q.Dequeue();
-                            this.logger.LogInformation($"Broadcasting {actionable}: {this.files[chosen]}");
-                            await this.Broadcast(this.files[chosen]);
+                            var file = fileManager.Pick();
+                            this.logger.LogInformation("Broadcasting {DateTime}: {File}", actionable, file);
+                            await this.Broadcast(file);
                             if (q.Any())
-                                this.logger.LogInformation($"Next broadcast: {q.Peek()}");
+                                this.logger.LogInformation("Next broadcast: {DateTime}", q.Peek());
                         }
 
-                        await Task.Delay(int.Parse(this.configuration["azaan:delay"]), stoppingToken);
+                        await Task.Delay(int.Parse(this.configuration["azaan:delay"] ?? "10"), stoppingToken);
                     }
                 }
                 catch (Exception ex)
@@ -81,14 +74,16 @@ namespace AzaanService
                 }
 
                 TimeSpan sleepTime = DateTime.Today.AddDays(1) - DateTime.Now;
-                this.logger.LogInformation($"Finished daily routine. Sleeping till midnight {sleepTime}. Goodbye.");
+                this.logger.LogInformation("Finished daily routine. Sleeping till midnight {SleepTime}. Goodbye.", sleepTime);
                 await Task.Delay(sleepTime, stoppingToken);
             }
         }
 
-        private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs args)
         {
-            this.logger.LogError($"{sender}: {e}");
+            Exception e = (Exception)args.ExceptionObject;
+            Console.WriteLine("MyHandler caught : " + e.Message);
+            Console.WriteLine("Runtime terminating: {0}", args.IsTerminating);
         }
 
         private async Task Broadcast(string path)

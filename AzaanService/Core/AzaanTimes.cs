@@ -6,32 +6,22 @@ namespace AzaanService.Core
 
     public class AzaanTimes
     {
-        public AzaanTimes()
-        {
-            this.Isha = DateTime.MinValue;
-            this.Magrib = DateTime.MinValue;
-            this.Asr = DateTime.MinValue;
-            this.Dhuhr = DateTime.MinValue;
-            this.Fajr = DateTime.MinValue;
-            this.Shurooq = DateTime.MinValue;
-        }
+        public DateTime Isha { get; set; } = DateTime.MinValue;
 
-        public DateTime Isha { get; set; }
+        public DateTime Magrib { get; set; } = DateTime.MinValue;
 
-        public DateTime Magrib { get; set; }
+        public DateTime Asr { get; set; } = DateTime.MinValue;
 
-        public DateTime Asr { get; set; }
+        public DateTime Dhuhr { get; set; } = DateTime.MinValue;
 
-        public DateTime Dhuhr { get; set; }
+        public DateTime Fajr { get; set; } = DateTime.MinValue;
 
-        public DateTime Fajr { get; set; }
-        public DateTime Shurooq { get; set; }
+        public DateTime Shurooq { get; set; } = DateTime.MinValue;
 
         public Queue<DateTime> AsQueue()
         {
-            Queue<DateTime> q = new Queue<DateTime>();
+            Queue<DateTime> q = new();
             q.Enqueue(this.Fajr);
-            q.Enqueue(this.Shurooq);
             q.Enqueue(this.Dhuhr);
             q.Enqueue(this.Asr);
             q.Enqueue(this.Magrib);
@@ -48,7 +38,7 @@ namespace AzaanService.Core
 
         public override string ToString()
         {
-            StringBuilder b=  new StringBuilder();
+            StringBuilder b=  new();
             b.AppendLine($"Fajr: {this.Fajr}");
             b.AppendLine($"Dhuhr: {this.Dhuhr}");
             b.AppendLine($"Asr: {this.Asr}");

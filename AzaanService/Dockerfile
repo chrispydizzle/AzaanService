@@ -1,19 +1,34 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
+# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/runtime:5.0 AS base
+# This stage is used when running from VS in fast mode (Default for Debug configuration)
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+USER root
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
+    echo "America/New_York" > /etc/timezone && \
+    dpkg-reconfigure -f noninteractive tzdata
+EXPOSE 13337/tcp
+
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+
+# This stage is used to build the service project
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["AzaanService/AzaanService.csproj", "AzaanService/"]
-RUN dotnet restore "AzaanService/AzaanService.csproj"
+COPY ["AzaanService.csproj", "."]
+RUN dotnet restore "./AzaanService.csproj"
 COPY . .
-WORKDIR "/src/AzaanService"
-RUN dotnet build "AzaanService.csproj" -c Release -o /app/build
+WORKDIR "/src/."
+RUN dotnet build "./AzaanService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+# This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
-RUN dotnet publish "AzaanService.csproj" -c Release -o /app/publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "./AzaanService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
+# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
