@@ -19,6 +19,9 @@ namespace AzaanService.Core
 
         public void Subscribe()
         {
+            IPEndPoint ipEndPoint = new(IPAddress.Parse(target), 8009);
+            IReceiver receiver = new Receiver() { IPEndPoint = ipEndPoint };
+            this.Add(receiver);
         }
 
         public bool Connected { get; set; }
@@ -79,16 +82,15 @@ namespace AzaanService.Core
 
         public async Task<bool> Connect(string ipAddress)
         {
-            // Create the IPEndPoint
-            IPEndPoint ipEndPoint = new(IPAddress.Parse(ipAddress), 8009);
-
-            IReceiver receiver = new Receiver() { IPEndPoint = ipEndPoint };
-            this.Add(receiver);
+            if (!this.Knows(ipAddress)) {
+                IPEndPoint ipEndPoint = new(IPAddress.Parse(ipAddress), 8009);
+                IReceiver receiver = new Receiver() { IPEndPoint = ipEndPoint };
+                this.Add(receiver);
+            }
             Sender sender = new();
-            await sender.ConnectAsync(receiver);
+            await sender.ConnectAsync(this.Get(ipAddress));
 
             logger.LogInformation("Connecting...");
-
 
             IMediaChannel mChannel = sender.GetChannel<IMediaChannel>();
             await sender.LaunchAsync(mChannel);
@@ -123,7 +125,7 @@ namespace AzaanService.Core
 
         public bool Knows(string friendlyName)
         {
-            return true;
+            return this.list.ContainsKey(friendlyName);
         }
 
         private void Add(IReceiver value)

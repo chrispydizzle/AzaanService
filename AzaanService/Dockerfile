@@ -8,6 +8,7 @@ RUN apt-get update && \
     ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
     echo "America/New_York" > /etc/timezone && \
     dpkg-reconfigure -f noninteractive tzdata
+
 EXPOSE 13337/tcp
 
 WORKDIR /app
