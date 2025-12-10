@@ -30,24 +30,28 @@ namespace AzaanService.Core
         {
             if (this.Knows(target))
             {
-                var connected = await this.Connect(target);
-                if (connected)
-                {
-                    logger.LogInformation("Casting to {Target}..{TimeStamp}", target, DateTimeOffset.Now);
-                    var played = await this.Play(path);
-                    if (!played)
+                var played = false;
+                var tries = 0;
+                while (!played && tries++ < 3) {
+                    var connected = await this.Connect(target);
+                    if (connected)
                     {
-                        logger.LogWarning("Could not play to {Target}. Not playing.", target);
+                        logger.LogInformation("Casting to {Target}..{TimeStamp}", target, DateTimeOffset.Now);
+                        played = await this.Play(path);
+                        if (!played)
+                        {
+                            logger.LogWarning("Could not play to {Target}. Not playing.", target);
+                        }
+
+                        this.Disconnect(target);
+                    }
+                    else
+                    {
+                        logger.LogWarning("Could not connect to device {Target}. Not playing.", target);
                     }
 
-                    this.Disconnect(target);
+                    logger.LogInformation("Caster running at: {time}", DateTimeOffset.Now);
                 }
-                else
-                {
-                    logger.LogWarning("Could not connect to device {Target}. Not playing.", target);
-                }
-
-                logger.LogInformation("Caster running at: {time}", DateTimeOffset.Now);
             }
             else
             {
@@ -82,7 +86,8 @@ namespace AzaanService.Core
 
         public async Task<bool> Connect(string ipAddress)
         {
-            if (!this.Knows(ipAddress)) {
+            if (!this.Knows(ipAddress))
+            {
                 IPEndPoint ipEndPoint = new(IPAddress.Parse(ipAddress), 8009);
                 IReceiver receiver = new Receiver() { IPEndPoint = ipEndPoint };
                 this.Add(receiver);
@@ -114,10 +119,19 @@ namespace AzaanService.Core
             MediaInformation mediaInformation = new();
             mediaInformation.ContentId = contentLink;
             mediaInformation.ContentType = "audio/x-wav";
-            if(mediaChannel != null) { 
-                await mediaChannel.LoadAsync(mediaInformation);
-                await mediaChannel.PlayAsync();
-                return true;
+            if (mediaChannel != null)
+            {
+                try
+                {
+                    await mediaChannel.LoadAsync(mediaInformation);
+                    await mediaChannel.PlayAsync();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error during Play operation. {mediaChannelStatus}", mediaChannel.Status);
+                    return false;
+                }
             }
 
             return false;
